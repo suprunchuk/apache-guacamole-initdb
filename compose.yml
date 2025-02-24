@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+  mysql:
+    image: mysql:9.2.0
+    container_name: guacmysql
+    environment:
+      MYSQL_DATABASE: guacamole
+      MYSQL_USER: guacuser
+      MYSQL_PASSWORD: guacPA55
+      MYSQL_ROOT_PASSWORD: myROOTpa55
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
+    restart: unless-stopped
+    networks:
+      - guac-net
+
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: guacd
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    networks:
+      - guac-net
+
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole
+    environment:
+      MYSQL_HOSTNAME: mysql
+      MYSQL_DATABASE: guacamole
+      MYSQL_USER: guacuser
+      MYSQL_PASSWORD: guacPA55
+      GUACD_HOSTNAME: guacd
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - guacd
+    networks:
+      - guac-net
+
+volumes:
+  mysql-data:
+    name: guacamole-mysql-data
+
+networks:
+  guac-net:
+    driver: bridge
+    name: guacamole-network
